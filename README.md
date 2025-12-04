@@ -1,47 +1,13 @@
-# Proyecto: Blog simple con microservicios (Clase 4)
+# Blog Simple con Seguridad (Clase 5)
 
-Este proyecto despliega blog básico utilizando arquitectura de microservicios con **Docker compose**
-
-Arquitectura: Nginx (como API gateway), Backend Node.js, Redis cache, MongoDB para persistencia, Frontend Nginx estático.
-
-## Diagrama ASCII
-
-[Cliente] --> (8080) Nginx Gateway ├── /api/* --> Backend (Node.js, 5000) │ ├── Redis (6379) [cache] │ └── MongoDB (27017) [persistencia] └── / --> Frontend (Nginx estático)
-
-## Servicios
-
-
-| Servicio   | Imagen / Build         | Puerto Expuesto | Función                          |
-|------------|------------------------|-----------------|----------------------------------|
-| Gateway    | nginx (custom conf)    | 8080            | API Gateway y frontend           |
-| Backend    | Node.js (Express)      | 5000            | API CRUD de posts                |
-| Redis      | redis:7-alpine         | 6379            | Caché de posts                   |
-| MongoDB    | mongo:6                | 27017           | Base de datos                    |
-| Frontend   | nginx (HTML estático)  | 80 (interno)    | Interfaz web simple              |
-
-## Uso
-
-1. Clonar repositorio:
-   ```bash
-   git clone https://github.com/githanshync/docker-microservicios-clase4.git
-   cd docker-microservicios-clase4
-2. docker compose up -d
-3. Abrir http://localhost:8080
-4. Health: /gateway/health, /api/health
-
-## Endpoints
-
-- GET /api/posts
-- GET /api/posts/:id
-- POST /api/posts
-
-Respuestas incluyen `source: "cache"` o `source: "database"` para demostrar HIT/MISS.
+## Mejoras aplicadas
+- **Escaneo con Trivy**: se detectaron vulnerabilidades menores, corregidas actualizando a `node:20-alpine`.
+- **Multi-stage builds**: backend reducido de ~300MB a ~80MB.
+- **Usuario no root**: verificado con `docker exec backend id`, muestra `uid=1000(node)`.
+- **Secretos**: credenciales de MongoDB se inyectan vía Docker secrets (`secrets/mongo_uri.txt`).
+- **Imágenes minimalistas**: todas basadas en `alpine`.
 
 ## Pruebas
-
-- Primer GET /api/posts: source=database (MISS)
-- Segundo GET: source=cache (HIT)
-- POST /api/posts: invalida cache de listado
-- Persistencia: reiniciar contenedores y verificar datos
-- Routing: /gateway/health y /api/health retornan ok
-
+- `trivy image blog-backend:latest`  reporte de vulnerabilidades.
+- `docker exec backend id`  confirma usuario `node`.
+- `docker compose up -d`  servicios levantan correctamente con secretos.
