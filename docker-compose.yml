@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  gateway:
+    build: ./gateway
+    image: blog-gateway:latest
+    container_name: gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - appnet
+
+  frontend:
+    build: ./frontend
+    image: blog-frontend:latest
+    container_name: frontend
+    networks:
+      - appnet
+
+  backend:
+    build: ./backend
+    image: blog-backend:latest
+    container_name: backend
+    environment:
+      - MONGO_URI=mongodb://db:27017/blog
+      - MONGO_DB=blog
+      - REDIS_URL=redis://redis:6379
+      - PORT=5000
+    depends_on:
+      - db
+      - redis
+    networks:
+      - appnet
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - appnet
+
+  db:
+    image: mongo:6
+    container_name: db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - appnet
+
+networks:
+  appnet:
+
+volumes:
+  mongodata:

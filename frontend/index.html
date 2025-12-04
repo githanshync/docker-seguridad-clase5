@@ -1,0 +1,78 @@
+<!-- frontend/index.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Blog Simple</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, Arial; margin: 2rem; }
+    .hit { color: green; }
+    .miss { color: orange; }
+    .post { border: 1px solid #ddd; padding: 1rem; margin: .5rem 0; }
+    form { margin: 1rem 0; display: grid; gap: .5rem; max-width: 480px; }
+    input, textarea { padding: .5rem; }
+    button { padding: .5rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Blog Simple</h1>
+
+  <section>
+    <h2>Crear post</h2>
+    <form id="createForm">
+      <input type="text" id="title" placeholder="Título" required />
+      <textarea id="content" placeholder="Contenido" required></textarea>
+      <input type="text" id="author" placeholder="Autor (opcional)" />
+      <button type="submit">Crear</button>
+    </form>
+    <div id="createResult"></div>
+  </section>
+
+  <section>
+    <h2>Listado de posts</h2>
+    <button id="refreshBtn">Refrescar</button>
+    <div id="source"></div>
+    <div id="posts"></div>
+  </section>
+
+  <script>
+    async function fetchPosts() {
+      const res = await fetch('/api/posts');
+      const json = await res.json();
+      document.getElementById('source').innerHTML =
+        'Fuente: ' + (json.source === 'cache'
+          ? '<span class="hit">cache (HIT)</span>'
+          : '<span class="miss">database (MISS)</span>');
+      const container = document.getElementById('posts');
+      container.innerHTML = '';
+      (json.data || []).forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.innerHTML = `<strong>${p.title}</strong><br/>${p.content}<br/><small>${p.author || 'anonymous'} — ${new Date(p.createdAt).toLocaleString()}</small>`;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchPosts);
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const author = document.getElementById('author').value.trim();
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, author })
+      });
+      const json = await res.json();
+      document.getElementById('createResult').textContent = res.ok ? 'Post creado' : ('Error: ' + (json.error || ''));
+      await fetchPosts();
+      e.target.reset();
+    });
+
+    fetchPosts();
+  </script>
+</body>
+</html>
